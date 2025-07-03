@@ -6,18 +6,18 @@ from fastapi.middleware.cors import CORSMiddleware # type: ignore
 import subprocess
 import tempfile
 import os
-from typing import List
+from typing import List, Optional
 
 app = FastAPI()
 
-class TestCase(BaseModel):
-    input: str
-    expected_output: str
+# class TestCase(BaseModel):
+#     input: str
+#     expected_output: str
     
 class CodeRequest(BaseModel):
     code: str
     input: str = ""
-    expected_output: str = None
+    expected_output: Optional[str] = None
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,68 +30,6 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {"message": "this is working (maybe)"}
-
-# @app.post("/run")
-# def run_code(request: CodeRequest):
-#     with tempfile.NamedTemporaryFile(delete=False, suffix=".py") as tmp:
-#         tmp.write(request.code.encode('utf-8'))
-#         tmp_filename = tmp.name
-#     try:
-#         result = subprocess.run(
-#             ["python", tmp_filename],
-#             stdout=subprocess.PIPE,
-#             stderr=subprocess.PIPE,
-#             timeout=5  
-#         )
-#         output = result.stdout.decode("utf-8")
-#         errors = result.stderr.decode("utf-8")
-#         return {"output": output, "errors": errors}
-#     finally:
-#         os.unlink(tmp_filename) 
-
-# @app.post("/run")
-# def run_code(request: CodeRequest):
-#     results = []
-
-#     for case in request.test_cases:
-#         with tempfile.NamedTemporaryFile(delete=False, suffix=".py") as tmp:
-#             tmp.write(request.code.encode("utf-8"))
-#             tmp_filename = tmp.name
-
-#         try:
-#             result = subprocess.run(
-#                 ["python", tmp_filename],
-#                 input=case.input.encode("utf-8"),
-#                 stdout=subprocess.PIPE,
-#                 stderr=subprocess.PIPE,
-#                 timeout=5
-#             )
-#             actual_output = result.stdout.decode("utf-8").strip()
-#             errors = result.stderr.decode("utf-8").strip()
-
-#             passed = (actual_output == case.expected_output.strip()) and not errors
-
-#             results.append({
-#                 "input": case.input,
-#                 "expected": case.expected_output,
-#                 "actual": actual_output,
-#                 "errors": errors,
-#                 "passed": passed
-#             })
-
-#         except subprocess.TimeoutExpired:
-#             results.append({
-#                 "input": case.input,
-#                 "expected": case.expected_output,
-#                 "actual": "",
-#                 "errors": "Execution timed out.",
-#                 "passed": False
-#             })
-
-#         finally:
-#             os.unlink(tmp_filename)
-
-#     return {"results": results}
 
 @app.post("/run")
 def run_code(request: CodeRequest):
@@ -113,7 +51,9 @@ def run_code(request: CodeRequest):
         passed = None
         if request.expected_output is not None:
             passed = (actual_output == request.expected_output.strip()) and not errors
-
+        else:
+            passed = None
+            
         return {
             "output": actual_output,
             "errors": errors,
