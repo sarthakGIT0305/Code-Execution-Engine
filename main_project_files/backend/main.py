@@ -1,18 +1,14 @@
 # uvicorn main:app --reload --port 8000
 # D:\Coding++\sigma_web_dev\projectsWorking\Code-Execution-Engine\main_project_files\backend\venv\Scripts\python.exe
-from fastapi import FastAPI, HTTPException # type: ignore
-from pydantic import BaseModel  # type: ignore
-from fastapi.middleware.cors import CORSMiddleware # type: ignore
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel 
+from fastapi.middleware.cors import CORSMiddleware
 import subprocess
 import tempfile
 import os
 from typing import List, Optional
 
 app = FastAPI()
-
-# class TestCase(BaseModel):
-#     input: str
-#     expected_output: str
     
 class CodeRequest(BaseModel):
     code: str
