@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import Editor from "@monaco-editor/react";
 import axios from "axios";
 
@@ -8,21 +8,29 @@ export default function CodeEditor() {
   const [output, setOutput] = useState("");
   const [errors, setErrors] = useState("");
   const [loading, setLoading] = useState(false);
-  // const [testCases, setTestCases] = useState(`[
-  //   {
-  //     "input": "", 
-  //     "expected_output": ""
-  //   }
-  // ]`);
+  const [checkOutput, setCheckOutput] = useState(false);
+  const [result, setResult] = useState(null);
+  const [expectedOutput, setExpectedOutput] = useState("");
 
   const runCode = async () => {
     setLoading(true);
     setErrors("");
     setOutput("");
+    setResult(null);
+
     try {
-      const response = await axios.post("http://localhost:8000/run", { code, test_cases: JSON.parse(testCases) });
+      const payload = {
+        code,
+        input: input || "",
+        expected_output: checkOutput
+          ? (expectedOutput !== undefined ? expectedOutput : "")
+          : null
+      };
+
+      const response = await axios.post("http://localhost:8000/run", payload, { headers: { "Content-Type": "application/json" } });
       setOutput(response.data.output);
       setErrors(response.data.errors);
+      setResult(response.data.passed);
     } catch (err) {
       setErrors("Could not connect to server.");
     } finally {
@@ -40,11 +48,19 @@ export default function CodeEditor() {
         onChange={(value) => setCode(value)}
       />
       <textarea
-        placeholder="Enter test cases as JSON"
-        value={testCases}
-        onChange={(e) => setTestCases(e.target.value)}
-        style={{ width: "100%", height: "150px", marginTop: "10px" }}
+        placeholder="Enter input for your program"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        style={{ width: "100%", height: "100px", marginTop: "10px" }}
       />
+      <label style={{ display: "block", marginTop: "10px" }}>
+        <input
+          type="checkbox"
+          checked={checkOutput}
+          onChange={(e) => setCheckOutput(e.target.checked)}
+        />
+        &nbsp; Check output against expected
+      </label>
       <button onClick={runCode}
         disabled={loading}
         style={{
@@ -60,27 +76,25 @@ export default function CodeEditor() {
         </div>
       )}
       <h3>Output:</h3>
-      <pre style={{ background: "#222", color: "#0f0", padding: "10px" }}>
-        {output}
-      </pre>
+      <pre style={{ background: "#222", color: "#0f0", padding: "10px" }}>{output}</pre>
+
       <h3>Errors:</h3>
-      <pre style={{ background: "#222", color: "#f55", padding: "10px" }}>
-        {errors}
-      </pre>
-      {/* {response.data.results && (
-        <div style={{ marginTop: "20px" }}>
-          <h3>Test Results:</h3>
-          {response.data.results.map((res, index) => (
-            <div key={index} style={{ border: "1px solid #ccc", marginBottom: "10px", padding: "10px" }}>
-              <strong>Test Case {index + 1}: {res.passed ? "✅ Passed" : "❌ Failed"}</strong>
-              <div><b>Input:</b><pre>{res.input}</pre></div>
-              <div><b>Expected:</b><pre>{res.expected}</pre></div>
-              <div><b>Actual:</b><pre>{res.actual}</pre></div>
-              {res.errors && <div><b>Errors:</b><pre>{res.errors}</pre></div>}
-            </div>
-          ))}
-        </div>
-      )} */}
+      <pre style={{ background: "#222", color: "#f55", padding: "10px" }}>{errors}</pre>
+
+      {checkOutput && result !== null && (
+        <h3>
+          Verdict: {result ? "✅ Passed" : "❌ Failed"}
+        </h3>
+      )}
+      {/* {expected_output: checkOutput ? expectedOutput : null} */}
+      {checkOutput && (
+        <textarea
+          placeholder="Expected output"
+          value={expectedOutput}
+          onChange={(e) => setExpectedOutput(e.target.value)}
+          style={{ width: "100%", height: "100px", marginTop: "10px" }}
+        />
+      )}
     </div>
   );
 }
