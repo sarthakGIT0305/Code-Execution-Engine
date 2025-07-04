@@ -9,9 +9,11 @@ COPY . /app
 
 # Install dependencies
 RUN pip install -r requirements.txt
+RUN apt-get update && apt-get install -y g++
 
 # Expose FastAPI port
 EXPOSE 8000
 
 # Start the server
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
